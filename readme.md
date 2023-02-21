@@ -1,4 +1,4 @@
-token must be passed in format - "Bearer token"
+token must be passed in headers format =>   { "Authorization" : "Bearer token" }
 
 
 1. /api/user
