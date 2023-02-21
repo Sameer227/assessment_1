@@ -48,3 +48,7 @@ authorization - YES
 7. /api/task/:id
    type: DELETE
 authorization - YES
+
+8. /api/logout
+   type: GET
+authorization - YES
