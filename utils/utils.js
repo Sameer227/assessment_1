@@ -1,16 +1,15 @@
 const jwt = require("jsonwebtoken");
 const { getLoginData } = require("../api/service/userService");
 const Logger = require("./logger");
+const {v4: uuidv4} = require('uuid');
+const { getOneSessionData } = require("../api/service/SessionService");
 
 const createToken = (data) => {
   let log = new Logger(`ENTERING TO `, `UTIL_METHOD GENERATE_TOKEN`);
   log.debug(` | ${JSON.stringify(data)}`);
   let jwtSecretKey = process.env.JWT_SECRET_KEY;
-  let data1 = {
-    time: Date(),
-    userId: data.id,
-  };
-  let token = jwt.sign(data1, jwtSecretKey, { expiresIn: "24h" });
+
+  let token = jwt.sign(data, jwtSecretKey, { expiresIn: "30s" });
   log.debug(` || token |  ${token}`);
   return token;
 };
@@ -30,13 +29,36 @@ const verifyToken = async (req, res, next) => {
     if (verified) {
       log.debug(`DB Data => ${JSON.stringify(verified)}`);
 
+      let session = await getOneSessionData({
+        session_id:verified.session_id
+      })
+      console.log(session);
+
+      if(!session){
+        return res.status(403).send({
+          status: 403,
+          msg: "unauthorised",
+        });
+      }
+
+      let date = new Date()
+      let ms = date.getTime()
+
+      if(ms > session.session_end_at || ms < session.session_start_at){
+        return res.status(403).send({
+          status: 403,
+          msg: "unauthorised",
+        });
+      }
+
       return await getLoginData({
-        id: verified.userId,
+        id: verified.id
       })
         .then((resp) => {
           log.debug(`${JSON.stringify(resp)}`);
           console.log("sss", resp);
           req.user_id = resp.id;
+          req.user = verified
           next();
         })
         .catch((error) => {

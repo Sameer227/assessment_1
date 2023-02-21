@@ -4,9 +4,12 @@ const {
   updateTask,
   deleteTask,
   getAllTaskData,
+  getOneTaskData,
 } = require("../service/TaskController");
 const dbConfig = require("../../config/config");
 const { QueryTypes } = require("sequelize");
+let moment=require('moment')
+
 
 const createTaskController = (req, res) => {
   let logger = new Logger(
@@ -16,6 +19,14 @@ const createTaskController = (req, res) => {
 
   const { task, status, date } = req.body;
   let dateNow = new Date();
+
+  let dateFormatCheck = moment(date, 'DD/MM/YYYY',true).isValid();
+    if(!dateFormatCheck){
+      return res.send({
+        status: 502,
+        msg: "date must have DD/MM/YYYY format",
+      });
+    }
 
   if (status != "Completed" && status != "Incomplete") {
     return res.send({
@@ -48,7 +59,7 @@ const createTaskController = (req, res) => {
     });
 };
 
-const editTaskController = (req, res) => {
+const editTaskController = async (req, res) => {
   let logger = new Logger(
     `ENTERING TO CONTROLLER METHOD EDIT TASK`,
     `${req.user_id}`
@@ -60,6 +71,15 @@ const editTaskController = (req, res) => {
   if (task) {
     updatedData.task = task;
   }
+
+  let dateFormatCheck = moment(date, 'DD/MM/YYYY',true).isValid();
+  if(!dateFormatCheck){
+    return res.send({
+      status: 502,
+      msg: "date must have DD/MM/YYYY format",
+    });
+  }
+
 
   if (status) {
     if (status != "Completed" && status != "Incomplete") {
@@ -80,7 +100,15 @@ const editTaskController = (req, res) => {
       req.params
     )}`
   );
-  updateTask(updatedData, { id: req.params.id })
+  let TaskCheck = await getOneTaskData({ id: req.params.id, user_id: req.user.id })
+console.log(TaskCheck);
+  if(!TaskCheck){
+  return  res.send({
+      status: 502,
+      msg: "Task not found",
+    });
+  }
+  updateTask(updatedData, { id: req.params.id, user_id: req.user.id })
     .then((createdTask) => {
       return res.send({
         status: 200,
@@ -89,7 +117,7 @@ const editTaskController = (req, res) => {
     })
     .catch((err) => {
       logger.error(err);
-      res.send({
+     return res.send({
         status: 502,
         msg: "technical error occured",
       });
@@ -110,12 +138,22 @@ const deleteTaskController = (req, res) => {
   }
 
   logger.debug(` || id=> ${JSON.stringify(req.params)}`);
-  deleteTask({ id: req.params.id })
-    .then((createdTask) => {
+  deleteTask({ id: req.params.id, user_id: req.user.id })
+    .then((deleteTask) => {
+      console.log(deleteTask);
+      if(deleteTask){
+
+      
       return res.send({
         status: 200,
         msg: "successfully deleted task",
       });
+    }else{
+      return res.send({
+        status: 200,
+        msg: "Task Id not found",
+      });
+    }
     })
     .catch((err) => {
       logger.error(err);

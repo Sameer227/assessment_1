@@ -3,6 +3,8 @@ const Crypto = require("crypto-js/sha256");
 const { createToken } = require("../../utils/utils");
 const Logger = require("../../utils/logger");
 const { sendmail } = require("../../utils/Mail");
+const {v4: uuidv4} = require('uuid');
+const { createSession, deleteSession } = require("../service/SessionService");
 
 const loginController = (req, res) => {
   console.log(req.body);
@@ -16,7 +18,7 @@ const loginController = (req, res) => {
   }
 
   getLoginData({ username: username.toLowerCase() })
-    .then((loginInfo) => {
+    .then(async (loginInfo) => {
       logger.debug(`${JSON.stringify(loginInfo)}`);
       if (!loginInfo) {
         return res.send({
@@ -34,8 +36,17 @@ const loginController = (req, res) => {
           msg: "password is incorrect",
         });
       }
-
-      const token = createToken({ id: loginInfo.id });
+      let sessionId = uuidv4()
+      let now = new Date()
+      let current_time = now.getTime()
+      let session_data = {
+        user_id: loginInfo.id,
+        session_id: sessionId,
+        session_start_at: current_time,
+        session_end_at: current_time + (30*1000) // 30 sec
+      }
+     await createSession(session_data)
+      const token = createToken({ id: loginInfo.id, session_id: sessionId });
       logger.debug(`${token}`);
       return res.send({
         status: 200,
@@ -92,6 +103,29 @@ const userCreateController = async (req, res) => {
     });
 };
 
+const logoutController = (req,res)=>{
+  let logger = new Logger(
+    `ENTERING TO CONTROLLER METHOD LOGOUT`,
+    `${req.user_id}`
+  );
+console.log(req.user);
+  deleteSession({ session_id: req.user.session_id })
+    .then((deleteTask) => {
+      console.log(deleteTask);
+      return res.send({
+        status: 200,
+        msg: "successfully logged out",
+      });
+    })
+    .catch((err) => {
+      logger.error(err);
+      res.send({
+        status: 502,
+        msg: "technical error occured",
+      });
+    });
+}
+
 function passwordCompare(password, dbPassword) {
   console.log(password);
   console.log(dbPassword);
@@ -104,4 +138,4 @@ function passwordCompare(password, dbPassword) {
   }
 }
 
-module.exports = { loginController, userCreateController };
+module.exports = { loginController, userCreateController,logoutController };

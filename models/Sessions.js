@@ -2,7 +2,7 @@ const dbconfig = require("../config/config");
 const Sequelize = require("sequelize");
 
 module.exports = dbconfig.define(
-  "Login",
+  "Session",
   {
     id: {
       type: Sequelize.INTEGER,
@@ -10,11 +10,13 @@ module.exports = dbconfig.define(
       autoIncrement: true,
       primaryKey: true,
     },
-    username: Sequelize.STRING,
-    password: Sequelize.STRING
+    user_id: Sequelize.INTEGER,
+    session_id: Sequelize.STRING,
+    session_start_at: Sequelize.BIGINT,
+    session_end_at: Sequelize.BIGINT
   },
   {
-    tableName: "Login",
+    tableName: "Session",
     timestamps: false,
   }
 );

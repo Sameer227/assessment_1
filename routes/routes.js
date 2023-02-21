@@ -2,6 +2,7 @@ let express = require("express");
 const {
   loginController,
   userCreateController,
+  logoutController,
 } = require("../api/Controller/userController");
 const {
   createTaskController,
@@ -13,6 +14,7 @@ const {
 var router = express.Router();
 
 router.post("/login", loginController);
+router.get("/logout", logoutController);
 router.post("/user", userCreateController);
 router.post("/task", createTaskController);
 router.post("/sort", sortTaskController);
